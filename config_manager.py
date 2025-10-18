@@ -6,7 +6,15 @@ class ConfigManager:
     """Manages configuration loading and reloading"""
     
     def __init__(self, config_file='config.yaml'):
-        self.config_file = config_file
+        # Get the directory where this script is located
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # If config_file is just a filename, make it relative to script directory
+        if not os.path.isabs(config_file):
+            self.config_file = os.path.join(script_dir, config_file)
+        else:
+            self.config_file = config_file
+        
         self.config = None
         self.load_config()
     
