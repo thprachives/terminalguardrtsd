@@ -126,6 +126,8 @@ class TerminalGuardMiddleware:
         @self.server.call_tool()
         async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             """Intercept tool calls and scan for secrets"""
+            print("[DEBUG] call_tool received:", name, file=sys.stderr)
+
             print(f"[MIDDLEWARE] call_tool: {name}", file=sys.stderr)
             
             # Handle our security tools
@@ -140,7 +142,8 @@ class TerminalGuardMiddleware:
         
     async def intercept_and_forward(self, tool_name: str, arguments: dict) -> list[TextContent]:
         """Intercept tool call, scan for secrets, and forward to target server"""
-        
+        print("[DEBUG] intercept_and_forward called for tool:", tool_name, file=sys.stderr)
+
         # Convert arguments to string for scanning
         args_str = json.dumps(arguments)
         
@@ -152,6 +155,7 @@ class TerminalGuardMiddleware:
         
         if secrets:
             # Secret detected - BLOCK
+            
             print(f"[MIDDLEWARE] ⚠️ BLOCKED: {len(secrets)} secret(s) detected!", file=sys.stderr)
             
             warning = "🚨 SECURITY ALERT - TerminalGuard 🚨\n\n"
@@ -165,6 +169,8 @@ class TerminalGuardMiddleware:
             warning += "❌ Operation BLOCKED to protect sensitive information.\n"
             warning += "Please remove secrets and try again."
             
+            print("[DEBUG] Blocking action for tool:", tool_name, file=sys.stderr)
+
             # Log the blocked attempt
             self.logger.log_event(
                 command=f"MCP:{tool_name} - {args_str[:100]}",

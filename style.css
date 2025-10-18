@@ -1,0 +1,80 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background: #f9f9f9;
+}
+
+h1, h2 {
+  color: #333;
+}
+
+section {
+  margin-bottom: 30px;
+  background: #fff;
+  padding: 15px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px #ccc;
+}
+
+#stats-section {
+  width: 100%;
+}
+
+.stats-flex {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 60px;
+}
+
+.stats-numbers {
+  font-size: 22px;
+  list-style: disc inside;
+  margin: 0;
+  padding: 0 0 0 28px;
+}
+
+.stats-chart {
+  min-width: 320px;
+  display: flex;
+  align-items: center;
+  height: 320px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table th, table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+table th {
+  background: #eee;
+}
+
+button {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  font-size: 16px;
+  border-radius: 4px;
+  margin-right: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #43a047;
+}
+
+#reloadMsg {
+  margin-left: 12px;
+  font-weight: bold;
+  color: #3f51b5;
+}

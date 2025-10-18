@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TerminalGuard Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>TerminalGuard Interactive Dashboard</h1>
+
+  <button onclick="reloadConfig()">Reload YAML Config</button>
+  <button onclick="refreshDashboard()">Refresh Dashboard</button>
+  <span id="reloadMsg"></span>
+
+  <section id="stats-section">
+    <h2>Statistics</h2>
+    <div class="stats-flex">
+      <ul class="stats-numbers">
+        <li>Total Commands: <span id="totalCommands">Loading...</span></li>
+        <li>Blocked Commands: <span id="blockedCommands">Loading...</span></li>
+        <li>Allowed Commands: <span id="allowedCommands">Loading...</span></li>
+        <li>Total Secrets Detected: <span id="totalSecrets">Loading...</span></li>
+        <li>Block Rate (%): <span id="blockRate">Loading...</span></li>
+      </ul>
+      <div class="stats-chart">
+        <canvas id="blockChart" width="300" height="300"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section id="logs">
+    <h2>Recent Audit Logs</h2>
+    <table>
+      <thead>
+        <tr><th>Timestamp</th><th>Command</th><th>Action</th><th>Secrets Found</th></tr>
+      </thead>
+      <tbody id="logTableBody">
+        <tr><td colspan="4">Loading logs...</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
