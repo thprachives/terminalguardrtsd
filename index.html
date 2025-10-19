@@ -7,11 +7,16 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <h1>TerminalGuard Interactive Dashboard</h1>
+  <div class="dashboard-header">
+    <h1>TerminalGuard Interactive Dashboard</h1>
+    
+    <div class="button-group">
+      <button onclick="reloadConfig()">Reload Regex</button>
+      <button onclick="refreshDashboard()">Refresh</button>
+    </div>
 
-  <button onclick="reloadConfig()">Reload YAML Config</button>
-  <button onclick="refreshDashboard()">Refresh Dashboard</button>
-  <span id="reloadMsg"></span>
+    <span id="reloadMsg"></span>
+  </div>
 
   <section id="stats-section">
     <h2>Statistics</h2>
