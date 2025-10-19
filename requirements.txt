@@ -2,3 +2,6 @@ mcp
 pyyaml
 anyio
 fastapi
+uvicorn
+httpx
+python-multipart

@@ -7,10 +7,12 @@ app = FastAPI(title="TerminalGuard Dashboard API")
 # Enable CORS for local frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # In production, specify your GitHub Pages domain
+    allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
+
 
 logger = AuditLogger()
 
@@ -70,6 +72,14 @@ def reload_config():
 if __name__ == "__main__":
     import uvicorn
     import os
-    port = int(os.environ.get("PORT", 8001))  # 8001 fallback only for local dev
-
-    uvicorn.run("dashboard_api:app", host="0.0.0.0", port=port, reload=True)
+    
+    # Use PORT from environment (Render sets this), fallback to 8001 for local
+    port = int(os.environ.get("PORT", 8001))
+    
+    # MUST bind to 0.0.0.0 for Render to detect the port
+    uvicorn.run(
+        "dashboard_api:app", 
+        host="0.0.0.0", 
+        port=port, 
+        reload=False  # Disable reload in production
+    )

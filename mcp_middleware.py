@@ -270,21 +270,22 @@ class TerminalGuardMiddleware:
             await self.cleanup()
 
 async def main():
-    """Main entry point"""
     try:
         print("[MIDDLEWARE] Program starting...", file=sys.stderr)
-        
-        # Target server: our test email server
         import os
         current_dir = os.path.dirname(os.path.abspath(__file__))
         target_script = os.path.join(current_dir, "test_email_server.py")
+        
         middleware = TerminalGuardMiddleware(
-            target_server_command=sys.executable,  # Python executable
+            target_server_command=sys.executable,
             target_server_args=[target_script]
         )
-        
         await middleware.run()
-    
+        
+        # CRITICAL: Keep the middleware running indefinitely
+        print("[MIDDLEWARE] Server started, running indefinitely...", file=sys.stderr)
+        await asyncio.Event().wait()  # This keeps it alive forever
+        
     except Exception as e:
         print(f"[MIDDLEWARE] Main error: {e}", file=sys.stderr)
         import traceback
@@ -292,4 +293,6 @@ async def main():
         sys.exit(1)
 
 if __name__ == "__main__":
+    import asyncio
     asyncio.run(main())
+
