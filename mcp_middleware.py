@@ -275,11 +275,12 @@ async def main():
         print("[MIDDLEWARE] Program starting...", file=sys.stderr)
         
         # Target server: our test email server
+        import os
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        target_script = os.path.join(current_dir, "test_email_server.py")
         middleware = TerminalGuardMiddleware(
             target_server_command=sys.executable,  # Python executable
-            target_server_args=[
-                'C:\\Users\\Prachi Verma\\OneDrive\\Desktop\\minor\\test_email_server.py'
-            ]
+            target_server_args=[target_script]
         )
         
         await middleware.run()
