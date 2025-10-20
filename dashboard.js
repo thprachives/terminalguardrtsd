@@ -90,4 +90,4 @@ function refreshDashboard() {
 
 // Initial fetch and auto-refresh every 5 seconds
 refreshDashboard();
-setInterval(refreshDashboard, 5000);
+
