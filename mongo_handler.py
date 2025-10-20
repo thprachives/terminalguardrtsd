@@ -7,8 +7,9 @@ class MongoDBHandler:
     
     def __init__(self):
         # Get MongoDB URI from environment variable
+        
         mongo_uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
-        self.client = MongoClient(mongo_uri)
+        self.client = MongoClient(mongo_uri,tls=True, tlsAllowInvalidCertificates=False)
         self.db = self.client['terminalguard']
         self.logs_collection = self.db['audit_logs']
         print("[MONGODB] Connected successfully")
