@@ -14,7 +14,7 @@ app.add_middleware(
 )
 
 
-logger = AuditLogger()
+logger = AuditLogger(use_mongodb=True)
 
 @app.get("/")
 def root():
