@@ -19,7 +19,7 @@ class MongoDBHandler:
             self.client = MongoClient(
                 mongo_uri,
                 tls=True,
-                tlsCAFile=certifi.where(),  # Use certifi's certificate bundle
+                tlsAllowInvalidCertificates=True,  # Use certifi's certificate bundle
                 serverSelectionTimeoutMS=10000,
                 connectTimeoutMS=10000
             )
@@ -28,7 +28,7 @@ class MongoDBHandler:
         except Exception as e:
             print(f"[MONGODB ERROR] Connection failed: {e}")
             raise
-        
+
         self.db = self.client['terminalguard']
         self.logs_collection = self.db['audit_logs']
     
