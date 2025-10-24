@@ -8,11 +8,13 @@ async def run_process(cmd_args):
     # Set working directory to script location
     cwd = os.path.dirname(os.path.abspath(__file__))
     proc = await asyncio.create_subprocess_exec(
-        *cmd_args, 
+        *cmd_args,
         cwd=cwd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        # Remove stdout and stderr redirection to see logs
+        stdout=None,  # ← Changed from asyncio.subprocess.PIPE
+        stderr=None   # ← Changed from asyncio.subprocess.PIPE
     )
+    
     # Don't wait - let processes run concurrently
     return proc
 
@@ -50,4 +52,3 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         print("Shutdown complete")
-

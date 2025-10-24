@@ -2,6 +2,7 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from audit_logger import AuditLogger
 
+print("[DEBUG] Starting application...")
 app = FastAPI(title="TerminalGuard Dashboard API")
 
 # Enable CORS for local frontend
