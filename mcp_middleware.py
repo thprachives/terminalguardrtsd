@@ -22,6 +22,7 @@ class TerminalGuardMiddleware:
             self.config_manager = ConfigManager()
             self.detector = SecretDetector(self.config_manager)
             self.logger = AuditLogger()
+            print("[DEBUG] Python version:", sys.version)
             print("[MIDDLEWARE] Components initialized successfully", file=sys.stderr)
         except Exception as e:
             print(f"[MIDDLEWARE] Error initializing components: {e}", file=sys.stderr)

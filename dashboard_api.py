@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from audit_logger import AuditLogger
+from fastapi.responses import JSONResponse
+import pymongo, certifi, sys, os
 
 print("[DEBUG] Starting application...")
 app = FastAPI(title="TerminalGuard Dashboard API")
@@ -97,3 +99,37 @@ if __name__ == "__main__":
         port=port, 
         reload=False  # Disable reload in production
     )
+
+
+@app.get("/debug-info")
+def debug_info():
+    info = {
+        "python_version": sys.version,
+        "pymongo_version": pymongo.__version__,
+        "certifi_version": certifi.__version__,
+        "certifi_ca_path": certifi.where(),
+        "mongo_connection_status": "unknown",
+        "mongo_error": None,
+        "sample_log": None
+    }
+
+    try:
+        # Check if the logger is using MongoDB
+        if hasattr(logger, "mongo_handler") and logger.mongo_handler:
+            mongo_handler = logger.mongo_handler
+
+            # Use the same client to test connection
+            mongo_handler.client.admin.command("ping")
+            info["mongo_connection_status"] = "connected"
+
+            # Try fetching a sample log
+            db = mongo_handler.client.get_database("audit_logs")  # update DB name if different
+            logs = list(db.logs.find().limit(1))
+            info["sample_log"] = logs[0] if logs else "No logs yet"
+        else:
+            info["mongo_connection_status"] = "not_configured"
+    except Exception as e:
+        info["mongo_connection_status"] = "failed"
+        info["mongo_error"] = str(e)
+
+    return JSONResponse(content=info)
