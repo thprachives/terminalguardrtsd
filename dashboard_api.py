@@ -20,6 +20,15 @@ logger = AuditLogger(use_mongodb=True)
 def root():
     return {"message": "Welcome to the TerminalGuard Dashboard API!"}
 
+@app.get("/health")
+def health_check():
+    try:
+        # Try a simple MongoDB ping or fetch recent logs to verify connection
+        logger.mongo_handler.client.admin.command('ping')
+        return {"status": "healthy", "mongodb": "connected"}
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}
+
 @app.get("/logs")
 def get_logs(
     count: int = Query(20, ge=1, le=100),

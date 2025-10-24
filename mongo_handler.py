@@ -7,14 +7,24 @@ class MongoDBHandler:
     
     def __init__(self):
         # Get MongoDB URI from environment variable
-        
+
+        print("[DEBUG] Attempting to read MONGODB_URI environment variable...")
         mongo_uri = os.getenv('MONGODB_URI')
         if not mongo_uri:
+            print("[ERROR] MONGODB_URI environment variable is missing")
             raise ValueError("MONGODB_URI environment variable is not set")
-        self.client = MongoClient(mongo_uri,tls=True, tlsAllowInvalidCertificates=False)
-        self.db = self.client['terminalguard']
-        self.logs_collection = self.db['audit_logs']
-        print("[MONGODB] Connected successfully")
+        else:
+            print(f"[DEBUG] MONGODB_URI found: {mongo_uri[:30]}...")  # mask part for safety
+
+        try:
+            self.client = MongoClient(mongo_uri, tls=True, tlsAllowInvalidCertificates=False)
+            # Test connection
+            self.client.admin.command('ping')
+            print("[MONGODB] Connected successfully")
+        except Exception as e:
+            print(f"[MONGODB ERROR] Connection failed: {e}")
+            raise
+
     
     def insert_log(self, log_entry):
         """Insert a single log entry"""
@@ -37,7 +47,7 @@ class MongoDBHandler:
             return logs
         except Exception as e:
             print(f"[MONGODB ERROR] Failed to read: {e}")
-            return []
+            raise
     
     def get_all_logs(self, limit=1000):
         """Get all logs with limit"""
