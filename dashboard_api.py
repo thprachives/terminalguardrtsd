@@ -23,9 +23,13 @@ def root():
 @app.get("/health")
 def health_check():
     try:
-        # Try a simple MongoDB ping or fetch recent logs to verify connection
-        logger.mongo_handler.client.admin.command('ping')
-        return {"status": "healthy", "mongodb": "connected"}
+        # Check if mongo_handler exists
+        if hasattr(logger, "mongo_handler") and logger.mongo_handler:
+            # Do a MongoDB ping test
+            logger.mongo_handler.client.admin.command("ping")
+            return {"status": "healthy", "mongodb": "connected"}
+        else:
+            return {"status": "degraded", "message": "MongoDB logging not in use"}
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}
 
