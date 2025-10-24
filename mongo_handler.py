@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 from datetime import datetime
 import os
+import certifi
 
 class MongoDBHandler:
     """MongoDB handler for audit logs"""
@@ -8,17 +9,26 @@ class MongoDBHandler:
     def __init__(self):
         print("[DEBUG] Attempting MongoDBHandler initialization")
         mongo_uri = os.getenv('MONGODB_URI')
-        print(f"[DEBUG] MONGODB_URI: {mongo_uri}")
+        print(f"[DEBUG] MONGODB_URI: {mongo_uri[:30]}")
+
         if not mongo_uri:
             print("[ERROR] MONGODB_URI environment variable is missing!!")
             raise ValueError("MONGODB_URI environment variable is not set")
+        
         try:
-            self.client = MongoClient(mongo_uri, tls=True, tlsAllowInvalidCertificates=False)
+            self.client = MongoClient(
+                mongo_uri,
+                tls=True,
+                tlsCAFile=certifi.where(),  # Use certifi's certificate bundle
+                serverSelectionTimeoutMS=10000,
+                connectTimeoutMS=10000
+            )
             self.client.admin.command('ping')
             print("[MONGODB] Connected successfully")
         except Exception as e:
             print(f"[MONGODB ERROR] Connection failed: {e}")
             raise
+        
         self.db = self.client['terminalguard']
         self.logs_collection = self.db['audit_logs']
     

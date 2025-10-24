@@ -9,6 +9,17 @@ class AuditLogger:
     def __init__(self, use_mongodb=True):
         print("[DEBUG] Initializing AuditLogger with use_mongodb =", use_mongodb)
         self.use_mongodb = use_mongodb
+        self.mongo_handler = None  # Initialize to None
+        
+        # Always set up file logging path first
+        log_file = 'audit.log'
+        if not os.path.isabs(log_file):
+            log_file = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                log_file
+            )
+        self.log_file = log_file  # ALWAYS set this
+        
         if self.use_mongodb:
             try:
                 self.mongo_handler = MongoDBHandler()
@@ -18,6 +29,7 @@ class AuditLogger:
                 self.use_mongodb = False
         else:
             print("[AUDIT_LOGGER] MongoDB logging NOT enabled, using file fallback")
+
 
     def log_event(self, command, secrets_detected, action, user_choice=None):
         """Log a command execution event"""
