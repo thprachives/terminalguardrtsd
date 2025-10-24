@@ -20,6 +20,7 @@ class MongoDBHandler:
                 mongo_uri,
                 tls=True,
                 tlsAllowInvalidCertificates=True,  # Use certifi's certificate bundle
+                tlsCAFile=certifi.where(),
                 serverSelectionTimeoutMS=10000,
                 connectTimeoutMS=10000
             )
