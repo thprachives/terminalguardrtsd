@@ -3,3 +3,5 @@
 {"timestamp": "2025-10-19 00:09:22", "command": "MCP:send_email - {\"body\": \"My AWS key is AKIAIOSFODNN7EXAMPaksfshapefhapofwjap32826391603LE\", \"subject\": \"API Keys\", ", "action": "BLOCKED", "secrets_found": 1, "secret_types": ["aws_secret_key"], "user_choice": "automatic"}
 {"timestamp": "2025-10-19 09:38:41", "command": "MCP:send_email - {\"to\": \"xyz@gmail.com\", \"subject\": \"test\", \"body\": \"API_KEY=vahsga62389absa72983jsdbwu3p23hjawu23r8u", "action": "BLOCKED", "secrets_found": 2, "secret_types": ["aws_secret_key", "generic_api_key"], "user_choice": "automatic"}
 {"timestamp": "2025-10-24T15:07:15.493585", "command": "echo "", "action": "BLOCKED", "secrets_found": 2, "secret_types": ["aws_secret_key", "generic_api_key"], "user_choice": "no"}
+{"timestamp": "2025-10-24T16:31:52.186755", "command": "echo hogya???? ", "action": "ALLOWED", "secrets_found": 0, "secret_types": [], "user_choice": null}
+{"timestamp": "2025-10-24T16:37:51.058666", "command": "export hello", "action": "ALLOWED", "secrets_found": 0, "secret_types": [], "user_choice": null}

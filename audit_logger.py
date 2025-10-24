@@ -43,14 +43,22 @@ class AuditLogger:
             'user_choice': user_choice
         }
         
+        logged = False
+        
         if self.use_mongodb:
+            print("[DEBUG] Current use_mongodb:", self.use_mongodb)
             try:
                 self.mongo_handler.insert_log(log_entry)
                 print(f"[AUDIT_LOGGED - MongoDB] {log_entry}")
+                logged = True
             except Exception as e:
-                print(f"[AUDIT_LOGGER ERROR] MongoDB write failed: {e}")
-        else:
-            # Fallback to file
+                print(f"[AUDIT_LOGGER ERROR] MongoDB write failed:", e)
+                print(f"[DEBUG] Falling back to file for log")
+                import traceback
+                traceback.print_exc()
+        
+        # Fallback to file if MongoDB not enabled OR if MongoDB write failed
+        if not logged:
             try:
                 with open(self.log_file, 'a', encoding='utf-8') as f:
                     f.write(json.dumps(log_entry) + '\n')
@@ -58,7 +66,7 @@ class AuditLogger:
                 print(f"[AUDIT_LOGGED - File] {log_entry}")
             except Exception as e:
                 print(f"[AUDIT_LOGGER ERROR] File write failed: {e}")
-
+        
         return log_entry
 
     def get_recent_logs(self, count=10):
