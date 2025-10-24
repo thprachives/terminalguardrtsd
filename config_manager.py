@@ -68,7 +68,7 @@ class ConfigManager:
         
         # Check pattern matches
         for pattern in whitelist['patterns']:
-            if pattern.match(command.strip()):
+            if pattern.search(command.strip()):
                 return True
         
         return False

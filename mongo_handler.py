@@ -8,7 +8,9 @@ class MongoDBHandler:
     def __init__(self):
         # Get MongoDB URI from environment variable
         
-        mongo_uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
+        mongo_uri = os.getenv('MONGODB_URI')
+        if not mongo_uri:
+            raise ValueError("MONGODB_URI environment variable is not set")
         self.client = MongoClient(mongo_uri,tls=True, tlsAllowInvalidCertificates=False)
         self.db = self.client['terminalguard']
         self.logs_collection = self.db['audit_logs']
