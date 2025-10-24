@@ -7,8 +7,8 @@ class AuditLogger:
     """Logs all command interceptions and security events to MongoDB"""
 
     def __init__(self, use_mongodb=True):
+        print("[DEBUG] Initializing AuditLogger with use_mongodb =", use_mongodb)
         self.use_mongodb = use_mongodb
-        
         if self.use_mongodb:
             try:
                 self.mongo_handler = MongoDBHandler()
@@ -16,16 +16,8 @@ class AuditLogger:
             except Exception as e:
                 print(f"[AUDIT_LOGGER] MongoDB unavailable, falling back to file: {e}")
                 self.use_mongodb = False
-        
-        # Keep file logging as backup
-        if not self.use_mongodb:
-            log_file = 'audit.log'
-            if not os.path.isabs(log_file):
-                log_file = os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)),
-                    log_file
-                )
-            self.log_file = log_file
+        else:
+            print("[AUDIT_LOGGER] MongoDB logging NOT enabled, using file fallback")
 
     def log_event(self, command, secrets_detected, action, user_choice=None):
         """Log a command execution event"""

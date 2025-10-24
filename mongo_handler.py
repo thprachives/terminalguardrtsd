@@ -6,25 +6,21 @@ class MongoDBHandler:
     """MongoDB handler for audit logs"""
     
     def __init__(self):
-        # Get MongoDB URI from environment variable
-
-        print("[DEBUG] Attempting to read MONGODB_URI environment variable...")
+        print("[DEBUG] Attempting MongoDBHandler initialization")
         mongo_uri = os.getenv('MONGODB_URI')
+        print(f"[DEBUG] MONGODB_URI: {mongo_uri}")
         if not mongo_uri:
-            print("[ERROR] MONGODB_URI environment variable is missing")
+            print("[ERROR] MONGODB_URI environment variable is missing!!")
             raise ValueError("MONGODB_URI environment variable is not set")
-        else:
-            print(f"[DEBUG] MONGODB_URI found: {mongo_uri[:30]}...")  # mask part for safety
-
         try:
             self.client = MongoClient(mongo_uri, tls=True, tlsAllowInvalidCertificates=False)
-            # Test connection
             self.client.admin.command('ping')
             print("[MONGODB] Connected successfully")
         except Exception as e:
             print(f"[MONGODB ERROR] Connection failed: {e}")
             raise
-
+        self.db = self.client['terminalguard']
+        self.logs_collection = self.db['audit_logs']
     
     def insert_log(self, log_entry):
         """Insert a single log entry"""
