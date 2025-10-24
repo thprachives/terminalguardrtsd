@@ -48,9 +48,12 @@ class AuditLogger:
         if self.use_mongodb:
             print("[DEBUG] Current use_mongodb:", self.use_mongodb)
             try:
-                self.mongo_handler.insert_log(log_entry)
-                print(f"[AUDIT_LOGGED - MongoDB] {log_entry}")
-                logged = True
+                result = self.mongo_handler.insert_log(log_entry)
+                if result is not None:  # <-- CHECK RETURN VALUE
+                    print(f"[AUDIT_LOGGED - MongoDB] {log_entry}")
+                    logged = True
+                else:
+                    print(f"[AUDIT_LOGGER ERROR] MongoDB insert returned None, falling back to file")
             except Exception as e:
                 print(f"[AUDIT_LOGGER ERROR] MongoDB write failed:", e)
                 print(f"[DEBUG] Falling back to file for log")

@@ -39,7 +39,7 @@ class MongoDBHandler:
             return result.inserted_id
         except Exception as e:
             print(f"[MONGODB ERROR] Failed to insert: {e}")
-            return None
+            raise
     
     def get_recent_logs(self, count=10):
         """Retrieve recent log entries"""
