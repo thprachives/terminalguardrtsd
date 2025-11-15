@@ -22,10 +22,10 @@ TerminalGuard is a cross-platform security tool designed to detect and prevent a
 
 ## Tasks to Do Next
 
-- **Expand the regex library** present in `config.yaml` to cover more secret types and reduce false negatives.
-- **Develop a dashboard** for real-time monitoring, alert visualization, and audit log analysis.
+- **Expand the regex library** present in `config.yaml` to cover more secret types and reduce false negatives.    //done
+- **Develop a dashboard** for real-time monitoring, alert visualization, and audit log analysis.     //done
 - **Work on additional use cases** beyond emails, such as file operations, database queries, cloud CLI commands, and more MCP tools integration.
-
+//no need
 ---
 
 ### Key Features
