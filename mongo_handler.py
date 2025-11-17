@@ -7,14 +7,15 @@ class MongoDBHandler:
     """MongoDB handler for audit logs"""
     
     def __init__(self):
-        print("[DEBUG] Attempting MongoDBHandler initialization")
+        import sys
+        print("[DEBUG] Attempting MongoDBHandler initialization", file=sys.stderr)
         mongo_uri = os.getenv('MONGODB_URI')
-        print(f"[DEBUG] MONGODB_URI: {mongo_uri[:30]}")
+        print(f"[DEBUG] MONGODB_URI: {mongo_uri[:30] if mongo_uri else 'NOT SET'}", file=sys.stderr)
 
         if not mongo_uri:
-            print("[ERROR] MONGODB_URI environment variable is missing!!")
+            print("[ERROR] MONGODB_URI environment variable is missing!!", file=sys.stderr)
             raise ValueError("MONGODB_URI environment variable is not set")
-        
+
         try:
             self.client = MongoClient(
                 mongo_uri,
@@ -24,9 +25,9 @@ class MongoDBHandler:
                 connectTimeoutMS=10000
             )
             self.client.admin.command('ping')
-            print("[MONGODB] Connected successfully")
+            print("[MONGODB] Connected successfully", file=sys.stderr)
         except Exception as e:
-            print(f"[MONGODB ERROR] Connection failed: {e}")
+            print(f"[MONGODB ERROR] Connection failed: {e}", file=sys.stderr)
             raise
 
         self.db = self.client['terminalguard']
@@ -34,15 +35,18 @@ class MongoDBHandler:
     
     def insert_log(self, log_entry):
         """Insert a single log entry"""
+        import sys
         try:
             result = self.logs_collection.insert_one(log_entry)
+            print(f"[MONGODB] Successfully inserted log with id: {result.inserted_id}", file=sys.stderr)
             return result.inserted_id
         except Exception as e:
-            print(f"[MONGODB ERROR] Failed to insert: {e}")
+            print(f"[MONGODB ERROR] Failed to insert: {e}", file=sys.stderr)
             raise
-    
+
     def get_recent_logs(self, count=10):
         """Retrieve recent log entries"""
+        import sys
         try:
             logs = list(
                 self.logs_collection
@@ -52,11 +56,12 @@ class MongoDBHandler:
             )
             return logs
         except Exception as e:
-            print(f"[MONGODB ERROR] Failed to read: {e}")
+            print(f"[MONGODB ERROR] Failed to read: {e}", file=sys.stderr)
             raise
     
     def get_all_logs(self, limit=1000):
         """Get all logs with limit"""
+        import sys
         try:
             logs = list(
                 self.logs_collection
@@ -66,5 +71,5 @@ class MongoDBHandler:
             )
             return logs
         except Exception as e:
-            print(f"[MONGODB ERROR] Failed to read: {e}")
+            print(f"[MONGODB ERROR] Failed to read: {e}", file=sys.stderr)
             return []

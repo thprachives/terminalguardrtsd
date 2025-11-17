@@ -25,20 +25,23 @@ class ConfigManager:
         
         with open(self.config_file, 'r', encoding='utf-8') as f:
             self.config = yaml.safe_load(f)
-        
-        print(f"[CONFIG] Loaded configuration from {self.config_file}")
+
+        import sys
+        print(f"[CONFIG] Loaded configuration from {self.config_file}", file=sys.stderr)
         return self.config
-    
+
     def reload_config(self):
         """Reload configuration from file"""
-        print("[CONFIG] Reloading configuration...")
+        import sys
+        print("[CONFIG] Reloading configuration...", file=sys.stderr)
         return self.load_config()
     
     def get_patterns(self):
         """Get all detection patterns as compiled regex objects"""
         patterns = {}
-        if 'patterns' in self.config:
-            for name, pattern_info in self.config['patterns'].items():
+        detection_config = self.config.get('detection', {})
+        if 'patterns' in detection_config:
+            for name, pattern_info in detection_config['patterns'].items():
                 patterns[name] = {
                     'regex': re.compile(pattern_info['regex']),
                     'description': pattern_info.get('description', ''),
