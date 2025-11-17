@@ -19,13 +19,22 @@ class TerminalGuardMiddleware:
         self.target_args = target_server_args or []
         
         try:
+            import os
+            mongodb_uri = os.getenv('MONGODB_URI')
+            if mongodb_uri:
+                print(f"[MIDDLEWARE] ✅ MONGODB_URI detected: {mongodb_uri[:30]}...", file=sys.stderr)
+            else:
+                print("[MIDDLEWARE] ⚠️ WARNING: MONGODB_URI not set in environment!", file=sys.stderr)
+
             self.config_manager = ConfigManager()
             self.detector = SecretDetector(self.config_manager)
             self.logger = AuditLogger()
-            print("[DEBUG] Python version:", sys.version)
+            print("[DEBUG] Python version:", sys.version, file=sys.stderr)
             print("[MIDDLEWARE] Components initialized successfully", file=sys.stderr)
         except Exception as e:
             print(f"[MIDDLEWARE] Error initializing components: {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
             raise
         
         self.target_session: ClientSession = None
@@ -141,18 +150,64 @@ class TerminalGuardMiddleware:
             # For other tools, scan and forward
             return await self.intercept_and_forward(name, arguments)
         
+    def filter_false_positives(self, tool_name: str, arguments: dict, secrets: list) -> list:
+        """Filter out false positive detections based on tool context"""
+        if not secrets:
+            return secrets
+
+        filtered_secrets = []
+
+        # For send_email and similar tools, ignore email addresses in recipient fields
+        email_tools = ['send_email', 'send_mail', 'email']
+        email_params = ['to', 'from', 'cc', 'bcc', 'recipient', 'sender', 'reply_to']
+
+        if tool_name.lower() in email_tools or 'email' in tool_name.lower():
+            # Get all email addresses from expected parameter fields
+            expected_emails = set()
+            for param in email_params:
+                if param in arguments:
+                    value = arguments[param]
+                    # Handle both string and list values
+                    if isinstance(value, str):
+                        expected_emails.add(value.lower())
+                    elif isinstance(value, list):
+                        expected_emails.update(v.lower() for v in value if isinstance(v, str))
+
+            print(f"[MIDDLEWARE] Expected emails for {tool_name}: {expected_emails}", file=sys.stderr)
+
+            # Filter out email pattern matches that are in expected fields
+            for secret in secrets:
+                if secret['type'] == 'email':
+                    # Check if this email is in an expected parameter
+                    if secret['match'].lower() in expected_emails:
+                        print(f"[MIDDLEWARE] Filtering false positive: {secret['match']} (expected email parameter)", file=sys.stderr)
+                        continue  # Skip this false positive
+
+                filtered_secrets.append(secret)
+        else:
+            # For non-email tools, return all secrets
+            filtered_secrets = secrets
+
+        return filtered_secrets
+
     async def intercept_and_forward(self, tool_name: str, arguments: dict) -> list[TextContent]:
         """Intercept tool call, scan for secrets, and forward to target server"""
         print("[DEBUG] intercept_and_forward called for tool:", tool_name, file=sys.stderr)
 
         # Convert arguments to string for scanning
         args_str = json.dumps(arguments)
-        
+
         print(f"[MIDDLEWARE] Intercepting: {tool_name}", file=sys.stderr)
         print(f"[MIDDLEWARE] Arguments: {args_str[:200]}", file=sys.stderr)
-        
+
         # Scan for secrets
-        secrets = self.detector.detect(args_str)
+        detected_secrets = self.detector.detect(args_str)
+
+        # Filter out false positives based on tool context
+        secrets = self.filter_false_positives(tool_name, arguments, detected_secrets)
+
+        if detected_secrets and not secrets:
+            print(f"[MIDDLEWARE] ✅ All {len(detected_secrets)} detection(s) were false positives, filtered out", file=sys.stderr)
         
         if secrets:
             # Secret detected - BLOCK
@@ -170,15 +225,19 @@ class TerminalGuardMiddleware:
             warning += "❌ Operation BLOCKED to protect sensitive information.\n"
             warning += "Please remove secrets and try again."
             
-            print("[DEBUG] Blocking action for tool:", tool_name, file=sys.stderr)
-
-            # Log the blocked attempt
-            self.logger.log_event(
-                command=f"MCP:{tool_name} - {args_str[:100]}",
-                secrets_detected=secrets,
-                action='BLOCKED',
-                user_choice='automatic'
-            )
+            print("[DEBUG] About to log the blocked attempt...", file=sys.stderr)
+            try:
+                self.logger.log_event(
+                    command=f"MCP:{tool_name} - {args_str[:100]}",
+                    secrets_detected=secrets,
+                    action='BLOCKED',
+                    user_choice='automatic'
+                )
+                print("[DEBUG] Blocked attempt logged successfully.", file=sys.stderr)
+            except Exception as e:
+                print(f"[ERROR] Failed to log blocked attempt: {e}", file=sys.stderr)
+                import traceback
+                traceback.print_exc()
             
             return [TextContent(type="text", text=warning)]
         

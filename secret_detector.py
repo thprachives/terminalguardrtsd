@@ -13,9 +13,10 @@ class SecretDetector:
     
     def reload_patterns(self):
         """Reload patterns from config file"""
+        import sys
         self.config_manager.reload_config()
         self.patterns = self.config_manager.get_patterns()
-        print(f"[DETECTOR] Reloaded {len(self.patterns)} detection patterns")
+        print(f"[DETECTOR] Reloaded {len(self.patterns)} detection patterns", file=sys.stderr)
     
     def detect(self, command):
         """

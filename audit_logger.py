@@ -7,10 +7,11 @@ class AuditLogger:
     """Logs all command interceptions and security events to MongoDB"""
 
     def __init__(self, use_mongodb=True):
-        print("[DEBUG] Initializing AuditLogger with use_mongodb =", use_mongodb)
+        import sys
+        print("[DEBUG] Initializing AuditLogger with use_mongodb =", use_mongodb, file=sys.stderr)
         self.use_mongodb = use_mongodb
         self.mongo_handler = None  # Initialize to None
-        
+
         # Always set up file logging path first
         log_file = 'audit.log'
         if not os.path.isabs(log_file):
@@ -19,20 +20,28 @@ class AuditLogger:
                 log_file
             )
         self.log_file = log_file  # ALWAYS set this
-        
+
         if self.use_mongodb:
             try:
+                mongodb_uri = os.getenv('MONGODB_URI')
+                print(f"[AUDIT_LOGGER] Checking MONGODB_URI... {'Found' if mongodb_uri else 'NOT FOUND'}", file=sys.stderr)
+
                 self.mongo_handler = MongoDBHandler()
-                print("[AUDIT_LOGGER] Using MongoDB for logging")
+                print("[AUDIT_LOGGER] ✅ Successfully initialized MongoDB logging", file=sys.stderr)
+                self.use_mongodb = True
             except Exception as e:
-                print(f"[AUDIT_LOGGER] MongoDB unavailable, falling back to file: {e}")
+                print(f"[AUDIT_LOGGER] ❌ MongoDB initialization failed, falling back to file: {e}", file=sys.stderr)
+                import traceback
+                traceback.print_exc(file=sys.stderr)
                 self.use_mongodb = False
+                self.mongo_handler = None
         else:
-            print("[AUDIT_LOGGER] MongoDB logging NOT enabled, using file fallback")
+            print("[AUDIT_LOGGER] MongoDB logging disabled, using file fallback only", file=sys.stderr)
 
 
     def log_event(self, command, secrets_detected, action, user_choice=None):
         """Log a command execution event"""
+        import sys
         timestamp = datetime.now().isoformat()
         log_entry = {
             'timestamp': timestamp,
@@ -42,55 +51,67 @@ class AuditLogger:
             'secret_types': [s['type'] for s in secrets_detected],
             'user_choice': user_choice
         }
-        
+
         logged = False
-        
-        if self.use_mongodb:
-            print("[DEBUG] Current use_mongodb:", self.use_mongodb)
+
+        if self.use_mongodb and self.mongo_handler:
             try:
+                print(f"[AUDIT_LOGGER] 📤 Attempting MongoDB insert for action: {action}", file=sys.stderr, flush=True)
                 result = self.mongo_handler.insert_log(log_entry)
-                if result is not None:  # <-- CHECK RETURN VALUE
-                    print(f"[AUDIT_LOGGED - MongoDB] {log_entry}")
+                if result is not None:
+                    print(f"[AUDIT_LOGGER] ✅ MongoDB logged successfully: {action} - {command[:50]}...", file=sys.stderr, flush=True)
                     logged = True
                 else:
-                    print(f"[AUDIT_LOGGER ERROR] MongoDB insert returned None, falling back to file")
+                    print(f"[AUDIT_LOGGER] ⚠️ MongoDB insert returned None, falling back to file", file=sys.stderr, flush=True)
             except Exception as e:
-                print(f"[AUDIT_LOGGER ERROR] MongoDB write failed:", e)
-                print(f"[DEBUG] Falling back to file for log")
+                print(f"[AUDIT_LOGGER] ❌ MongoDB write failed: {e}", file=sys.stderr, flush=True)
                 import traceback
-                traceback.print_exc()
-        
+                traceback.print_exc(file=sys.stderr)
+        else:
+            if self.use_mongodb:
+                print(f"[AUDIT_LOGGER] ⚠️ MongoDB handler not available, using file", file=sys.stderr, flush=True)
+
         # Fallback to file if MongoDB not enabled OR if MongoDB write failed
         if not logged:
             try:
                 with open(self.log_file, 'a', encoding='utf-8') as f:
                     f.write(json.dumps(log_entry) + '\n')
                     f.flush()
-                print(f"[AUDIT_LOGGED - File] {log_entry}")
+                print(f"[AUDIT_LOGGER] 📝 File logged: {action} - {command[:50]}...", file=sys.stderr, flush=True)
+                logged = True
             except Exception as e:
-                print(f"[AUDIT_LOGGER ERROR] File write failed: {e}")
-        
+                print(f"[AUDIT_LOGGER] ❌ File write failed: {e}", file=sys.stderr, flush=True)
+                import traceback
+                traceback.print_exc(file=sys.stderr)
+
+        if not logged:
+            print(f"[AUDIT_LOGGER] 🚨 CRITICAL: Failed to log event anywhere!", file=sys.stderr, flush=True)
+
         return log_entry
 
     def get_recent_logs(self, count=10):
         """Retrieve recent log entries"""
-        if self.use_mongodb:
-            return self.mongo_handler.get_recent_logs(count)
-        else:
-            # Fallback file reading (your existing code)
-            if not os.path.exists(self.log_file):
-                return []
-            
-            entries = []
+        import sys
+        if self.use_mongodb and self.mongo_handler:
             try:
-                with open(self.log_file, 'r', encoding='utf-8') as f:
-                    lines = f.readlines()
-                    for line in lines[-count:]:
-                        try:
-                            entries.append(json.loads(line.strip()))
-                        except Exception:
-                            continue
+                return self.mongo_handler.get_recent_logs(count)
             except Exception as e:
-                print(f"[AUDIT_LOGGER ERROR] Failed to read log: {e}")
-            
-            return entries
+                print(f"[AUDIT_LOGGER ERROR] Failed to read from MongoDB: {e}", file=sys.stderr)
+
+            # Fallback file reading (your existing code)
+        if not os.path.exists(self.log_file):
+            return []
+
+        entries = []
+        try:
+            with open(self.log_file, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+            for line in lines[-count:]:
+                try:
+                    entries.append(json.loads(line.strip()))
+                except Exception:
+                    continue
+        except Exception as e:
+            print(f"[AUDIT_LOGGER ERROR] Failed to read log: {e}", file=sys.stderr)
+
+        return entries
