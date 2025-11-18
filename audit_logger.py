@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 import os
+import sys
 from mongo_handler import MongoDBHandler
 
 class AuditLogger:
@@ -88,6 +89,15 @@ class AuditLogger:
             print(f"[AUDIT_LOGGER] 🚨 CRITICAL: Failed to log event anywhere!", file=sys.stderr, flush=True)
 
         return log_entry
+
+    def update_log_marking(self, log_id, user_choice):
+        if self.use_mongodb and self.mongo_handler:
+            try:
+                return self.mongo_handler.update_log_marking(log_id, user_choice)
+            except Exception as e:
+                print("[AUDIT_LOGGER] Failed to update marking:", e, file=sys.stderr)
+                return False
+        return False
 
     def get_recent_logs(self, count=10):
         """Retrieve recent log entries"""

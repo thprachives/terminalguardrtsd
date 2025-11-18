@@ -1,93 +1,307 @@
+// const API_BASE = 'https://terminalguardrtsd.onrender.com';
+
+// let blockChart = null;
+
+// function renderBlockChart(blocked, allowed) {
+//   const ctx = document.getElementById('blockChart').getContext('2d');
+//   if (blockChart) blockChart.destroy();
+//   blockChart = new Chart(ctx, {
+//     type: 'pie',
+//     data: {
+//       labels: ['Blocked', 'Allowed'],
+//       datasets: [{
+//         data: [blocked, allowed],
+//         backgroundColor: ['#f44336', '#4caf50'],
+//       }]
+//     },
+//     options: {
+//       responsive: false,
+//       plugins: {
+//         legend: { position: 'bottom' }
+//       }
+//     }
+//   });
+// }
+
+// async function fetchStats() {
+//   try {
+//     const res = await fetch(`${API_BASE}/statistics`);
+//     if (!res.ok) throw new Error("Failed to fetch stats");
+//     const data = await res.json();
+
+//     document.getElementById("totalCommands").textContent = data.total_commands;
+//     document.getElementById("blockedCommands").textContent = data.blocked_commands;
+//     document.getElementById("allowedCommands").textContent = data.allowed_commands;
+//     document.getElementById("totalSecrets").textContent = data.total_secrets_detected;
+//     document.getElementById("blockRate").textContent = data.block_rate_percent;
+
+//     renderBlockChart(data.blocked_commands, data.allowed_commands);
+//   } catch (error) {
+//     console.error(error);
+//   }
+// }
+
+// async function fetchLogs() {
+//   try {
+//     const res = await fetch(`${API_BASE}/logs?count=10`);
+//     if (!res.ok) throw new Error("Failed to fetch logs");
+//     const data = await res.json();
+
+//     const tbody = document.getElementById("logTableBody");
+//     tbody.innerHTML = "";
+
+//     if(data.logs.length === 0){
+//       tbody.innerHTML = "<tr><td colspan='4'>No logs found</td></tr>";
+//       return;
+//     }
+  
+//     data.logs.forEach(log => {
+//       const tr = document.createElement("tr");
+//       const ts = new Date(log.timestamp).toLocaleString();
+//       tr.innerHTML = `
+//         <td>${ts}</td>
+//         <td title="${log.command}">${log.command.length > 50 ? log.command.substring(0, 50) + "..." : log.command}</td>
+//         <td>${log.action}</td>
+//         <td>${log.secrets_found}</td>
+//       `;
+//       tbody.appendChild(tr);
+//     });
+//   } catch (error) {
+//     console.error(error);
+//   }
+// }
+
+// async function reloadConfig() {
+//   try {
+//     const res = await fetch(`${API_BASE}/reload_config`, { method: 'POST' });
+//     const data = await res.json();
+//     document.getElementById('reloadMsg').textContent = data.message || "Reloaded!";
+//     setTimeout(() => { document.getElementById('reloadMsg').textContent = ""; }, 2000);
+//     refreshDashboard();
+//   } catch (err) {
+//     document.getElementById('reloadMsg').textContent = "Error reloading config!";
+//   }
+// }
+
+// function refreshDashboard() {
+//   fetchStats();
+//   fetchLogs();
+// }
+
+// // Initial fetch and auto-refresh every 5 seconds
+// refreshDashboard();
+
 const API_BASE = 'https://terminalguardrtsd.onrender.com';
 
 let blockChart = null;
+let falsePositiveChart = null;
+let falseNegativeChart = null;
+let accuracyChart = null;
 
-function renderBlockChart(blocked, allowed) {
-  const ctx = document.getElementById('blockChart').getContext('2d');
-  if (blockChart) blockChart.destroy();
-  blockChart = new Chart(ctx, {
-    type: 'pie',
-    data: {
-      labels: ['Blocked', 'Allowed'],
-      datasets: [{
-        data: [blocked, allowed],
-        backgroundColor: ['#f44336', '#4caf50'],
-      }]
-    },
-    options: {
-      responsive: false,
-      plugins: {
-        legend: { position: 'bottom' }
-      }
-    }
-  });
-}
+let logs = []; // Cached logs including user markings
 
 async function fetchStats() {
-  try {
-    const res = await fetch(`${API_BASE}/statistics`);
-    if (!res.ok) throw new Error("Failed to fetch stats");
-    const data = await res.json();
+    try {
+        const res = await fetch(`${API_BASE}/statistics`);
+        if (!res.ok) throw new Error("Failed to fetch stats");
+        const data = await res.json();
+        document.getElementById("totalCommands").textContent = data.total_commands;
+        document.getElementById("blockedCommands").textContent = data.blocked_commands;
+        document.getElementById("allowedCommands").textContent = data.allowed_commands;
+        document.getElementById("totalSecrets").textContent = data.total_secrets_detected;
+        document.getElementById("blockRate").textContent = data.block_rate_percent;
+        renderBlockChart(data.blocked_commands, data.allowed_commands);
+    } catch (error) {
+        console.error(error);
+    }
+}
 
-    document.getElementById("totalCommands").textContent = data.total_commands;
-    document.getElementById("blockedCommands").textContent = data.blocked_commands;
-    document.getElementById("allowedCommands").textContent = data.allowed_commands;
-    document.getElementById("totalSecrets").textContent = data.total_secrets_detected;
-    document.getElementById("blockRate").textContent = data.block_rate_percent;
-
-    renderBlockChart(data.blocked_commands, data.allowed_commands);
-  } catch (error) {
-    console.error(error);
-  }
+function renderBlockChart(blocked, allowed) {
+    const ctx = document.getElementById("blockChart").getContext("2d");
+    if (blockChart) blockChart.destroy();
+    blockChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Blocked', 'Allowed'],
+            datasets: [{
+                data: [blocked, allowed],
+                backgroundColor: ['#f44336', '#4caf50']
+            }]
+        },
+        options: {
+            responsive: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
 }
 
 async function fetchLogs() {
-  try {
-    const res = await fetch(`${API_BASE}/logs?count=10`);
-    if (!res.ok) throw new Error("Failed to fetch logs");
-    const data = await res.json();
+    try {
+        const res = await fetch(`${API_BASE}/logs?count=10`);
+        if (!res.ok) throw new Error("Failed to fetch logs");
+        const data = await res.json();
+        logs = data.logs; // cache logs for calculations
+        renderLogsTable(logs);
+        calculateAndRenderMetrics();
+    } catch (error) {
+        console.error(error);
+    }
+}
 
+function renderLogsTable(logs) {
     const tbody = document.getElementById("logTableBody");
     tbody.innerHTML = "";
-
-    if(data.logs.length === 0){
-      tbody.innerHTML = "<tr><td colspan='4'>No logs found</td></tr>";
-      return;
+    if (logs.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='5'>No logs found</td></tr>";
+        return;
     }
-  
-    data.logs.forEach(log => {
-      const tr = document.createElement("tr");
-      const ts = new Date(log.timestamp).toLocaleString();
-      tr.innerHTML = `
-        <td>${ts}</td>
-        <td title="${log.command}">${log.command.length > 50 ? log.command.substring(0, 50) + "..." : log.command}</td>
-        <td>${log.action}</td>
-        <td>${log.secrets_found}</td>
-      `;
-      tbody.appendChild(tr);
+    logs.forEach(log => {
+        const tr = document.createElement("tr");
+
+        const logIdTd = document.createElement("td");
+        logIdTd.textContent = log._id || log.id;
+        tr.appendChild(logIdTd);
+
+        const secretFoundTd = document.createElement("td");
+        secretFoundTd.textContent = log.secret_found ? "Yes" : "No";
+        tr.appendChild(secretFoundTd);
+
+        const commandTd = document.createElement("td");
+        commandTd.textContent = log.command;
+        tr.appendChild(commandTd);
+
+        const timestampTd = document.createElement("td");
+        timestampTd.textContent = new Date(log.timestamp).toLocaleString();
+        tr.appendChild(timestampTd);
+
+        const actionTd = document.createElement("td");
+
+        const tickBtn = document.createElement("button");
+        tickBtn.textContent = "✔️";
+        tickBtn.title = "Mark as Correct Detection";
+        tickBtn.onclick = () => handleMarking(log._id || log.id, true);
+
+        const crossBtn = document.createElement("button");
+        crossBtn.textContent = "❌";
+        crossBtn.title = "Mark as Incorrect Detection";
+        crossBtn.onclick = () => handleMarking(log._id || log.id, false);
+
+        // Highlight buttons if marking exists in the DB
+        if (log.user_choice === "true") tickBtn.style.backgroundColor = '#4caf50';
+        if (log.user_choice === "false") crossBtn.style.backgroundColor = '#f44336';
+
+        actionTd.appendChild(tickBtn);
+        actionTd.appendChild(crossBtn);
+        tr.appendChild(actionTd);
+
+        tbody.appendChild(tr);
     });
-  } catch (error) {
-    console.error(error);
-  }
 }
 
-async function reloadConfig() {
-  try {
-    const res = await fetch(`${API_BASE}/reload_config`, { method: 'POST' });
-    const data = await res.json();
-    document.getElementById('reloadMsg').textContent = data.message || "Reloaded!";
-    setTimeout(() => { document.getElementById('reloadMsg').textContent = ""; }, 2000);
-    refreshDashboard();
-  } catch (err) {
-    document.getElementById('reloadMsg').textContent = "Error reloading config!";
-  }
+// Save marking to backend and refresh logs
+async function handleMarking(logId, isTrue) {
+    try {
+        await fetch(`${API_BASE}/logs/mark`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ log_id: logId, user_choice: isTrue ? "true" : "false" })
+        });
+        await fetchLogs(); // refresh table and metrics
+    } catch (error) {
+        console.error("Failed to save marking", error);
+    }
 }
 
-function refreshDashboard() {
-  fetchStats();
-  fetchLogs();
+// Calculate and visualize metrics using user_choice from logs
+function calculateAndRenderMetrics() {
+    let TP = 0, TN = 0, FP = 0, FN = 0;
+    logs.forEach(log => {
+        if (log.user_choice === "true" || log.user_choice === "false") {
+            const markedTrue = (log.user_choice === "true");
+            const secretFound = !!log.secret_found;
+            if (secretFound) {
+                if (markedTrue) TP++;
+                else FP++;
+            } else {
+                if (markedTrue) FN++;
+                else TN++;
+            }
+        }
+    });
+
+    const total = TP + TN + FP + FN;
+    const accuracy = total ? (TP + TN) / total : 0;
+    const falsePositiveRate = (FP + TP) ? FP / (FP + TP) : 0;
+    const falseNegativeRate = (FN + TN) ? FN / (FN + TN) : 0;
+
+    renderFalsePositiveChart(FP, TP);
+    renderFalseNegativeChart(FN, TN);
+    renderAccuracyChart(TP + TN, FP + FN);
 }
 
-// Initial fetch and auto-refresh every 5 seconds
-refreshDashboard();
+function renderFalsePositiveChart(FP, TP) {
+    const ctx = document.getElementById("falsePositiveChart").getContext("2d");
+    if (falsePositiveChart) falsePositiveChart.destroy();
+    falsePositiveChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['False Positives', 'True Positives'],
+            datasets: [{
+                data: [FP, TP],
+                backgroundColor: ['#f44336', '#4caf50']
+            }]
+        },
+        options: {
+            responsive: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
 
+function renderFalseNegativeChart(FN, TN) {
+    const ctx = document.getElementById("falseNegativeChart").getContext("2d");
+    if (falseNegativeChart) falseNegativeChart.destroy();
+    falseNegativeChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['False Negatives', 'True Negatives'],
+            datasets: [{
+                data: [FN, TN],
+                backgroundColor: ['#f44336', '#4caf50']
+            }]
+        },
+        options: {
+            responsive: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
+
+function renderAccuracyChart(correctCount, incorrectCount) {
+    const ctx = document.getElementById("accuracyChart").getContext("2d");
+    if (accuracyChart) accuracyChart.destroy();
+    accuracyChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Correct', 'Incorrect'],
+            datasets: [{
+                data: [correctCount, incorrectCount],
+                backgroundColor: ['#4caf50', '#f44336']
+            }]
+        },
+        options: {
+            responsive: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
+
+// Initialize dashboard
+async function initDashboard() {
+    await fetchStats();
+    await fetchLogs();
+}
+
+window.onload = initDashboard;

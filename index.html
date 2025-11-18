@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -47,5 +47,67 @@
   </section>
 
   <script src="dashboard.js"></script>
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TerminalGuard Dashboard</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <header>
+        <h1>TerminalGuard Secret Detection Dashboard</h1>
+    </header>
+
+    <section id="stats-section">
+        <div>
+            <span>Total Commands: <span id="totalCommands"></span></span>
+            <span>Blocked Commands: <span id="blockedCommands"></span></span>
+            <span>Allowed Commands: <span id="allowedCommands"></span></span>
+            <span>Total Secrets Detected: <span id="totalSecrets"></span></span>
+            <span>Block Rate: <span id="blockRate"></span></span>
+        </div>
+        <canvas id="blockChart" width="300" height="300"></canvas>
+    </section>
+
+    <section id="accuracy-charts-section">
+        <h2>Detection Performance</h2>
+        <div class="chart-container">
+            <h3>False Positive Rate</h3>
+            <canvas id="falsePositiveChart" width="300" height="300"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>False Negative Rate</h3>
+            <canvas id="falseNegativeChart" width="300" height="300"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Accuracy</h3>
+            <canvas id="accuracyChart" width="300" height="300"></canvas>
+        </div>
+    </section>
+
+    <section id="logs-section">
+        <h2>Logs</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Log ID</th>
+                    <th>Secret Found</th>
+                    <th>Command</th>
+                    <th>Timestamp</th>
+                    <th>Mark Detection</th> <!-- New column -->
+                </tr>
+            </thead>
+            <tbody id="logTableBody">
+                <!-- Logs will be dynamically inserted here -->
+            </tbody>
+        </table>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="dashboard.js"></script>
 </body>
 </html>

@@ -2,6 +2,8 @@ from pymongo import MongoClient
 from datetime import datetime
 import os
 import certifi
+from bson.objectid import ObjectId
+import sys
 
 class MongoDBHandler:
     """MongoDB handler for audit logs"""
@@ -73,3 +75,16 @@ class MongoDBHandler:
         except Exception as e:
             print(f"[MONGODB ERROR] Failed to read: {e}", file=sys.stderr)
             return []
+        
+    
+
+    def update_log_marking(self, log_id, user_choice):
+        try:
+            result = self.logs_collection.update_one(
+                {"_id": ObjectId(log_id)},
+                {"$set": {"user_choice": user_choice}}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            print("[MONGODB] ERROR: Failed to update marking", e, file=sys.stderr)
+            return False
