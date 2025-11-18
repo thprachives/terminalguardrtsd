@@ -138,15 +138,14 @@ from fastapi import FastAPI, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from audit_logger import AuditLogger
 from fastapi.responses import JSONResponse
-import pymongo, certifi, sys, os
+import sys, os, pymongo, certifi
 
-print("[DEBUG] Starting application...")
 app = FastAPI(title="TerminalGuard Dashboard API")
 
-# Enable CORS for frontend (update this for production security)
+# Update CORS to allow your frontend domains later
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change to your frontend domain for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -172,48 +171,37 @@ def health_check():
 @app.get("/logs")
 def get_logs(
     count: int = Query(20, ge=1, le=100),
-    action_filter: str = Query(None, description="Filter by action: BLOCKED or ALLOWED"),
+    action_filter: str = Query(None),
 ):
-    """Get recent audit logs with optional filtering and user marking"""
     all_logs = logger.get_recent_logs(1000)
     if action_filter:
-        filtered = [log for log in all_logs if log['action'] == action_filter.upper()]
+        filtered = [log for log in all_logs if log["action"] == action_filter.upper()]
     else:
         filtered = all_logs
 
-    # Only include relevant fields for dashboard
+    # Return fields including mark_detection, default null if missing
     result_logs = []
     for log in filtered[:count]:
-        # Ensure user_choice and secret_found fields
-        log_obj = {
+        result_logs.append({
             "id": str(log.get("_id", log.get("id"))),
             "_id": str(log.get("_id", log.get("id"))),
-            "action": log.get("action"),
-            "secret_found": bool(log.get("secrets_found", log.get("secret_found", 0))),
+            "timestamp": log.get("timestamp"),
             "command": log.get("command", ""),
-            "timestamp": log.get("timestamp", ""),
-            "user_choice": log.get("user_choice", None)
-        }
-        result_logs.append(log_obj)
+            "action": log.get("action"),
+            "secrets_found": log.get("secrets_found"),
+            "mark_detection": log.get("mark_detection", None),  # Our manual mark field
+        })
+    return {"total_logs": len(result_logs), "logs": result_logs}
 
-    return {
-        "total_logs": len(result_logs),
-        "logs": result_logs,
-    }
-
-@app.post("/logs/mark")
-def mark_log(
+@app.post("/logs/mark_detection")
+def mark_detection(
     log_id: str = Body(...),
-    user_choice: str = Body(...)
+    mark: str = Body(...)  # "true" or "false"
 ):
-    """
-    Mark detection verdict (true/false) for a log entry in MongoDB.
-    """
-    result = logger.update_log_marking(log_id, user_choice)
+    result = logger.update_mark_detection(log_id, mark)
     if result:
         return {"status": "success"}
-    else:
-        return {"status": "failed", "error": "Could not mark log"}
+    return {"status": "failed", "error": "Could not update marking"}
 
 @app.get("/statistics")
 def get_statistics():
@@ -221,7 +209,7 @@ def get_statistics():
     total = len(logs)
     blocked = sum(1 for log in logs if log.get("action") == "BLOCKED")
     allowed = total - blocked
-    secrets_count = sum(log.get("secrets_found", log.get("secret_found", 0)) for log in logs)
+    secrets_count = sum(log.get("secrets_found", 0) for log in logs)
     
     secret_types = {}
     for log in logs:
@@ -239,46 +227,7 @@ def get_statistics():
         "block_rate_percent": round(block_rate, 2),
     }
 
-@app.post("/reload_config")
-def reload_config():
-    """Trigger reload of the secret detection configuration"""
-    from config_manager import ConfigManager
-    cm = ConfigManager()
-    cm.reload_config()
-    return {"status": "success", "message": "Configuration reloaded"}
-
-@app.get("/debug-info")
-def debug_info():
-    info = {
-        "python_version": sys.version,
-        "pymongo_version": pymongo.__version__,
-        "certifi_version": certifi.__version__,
-        "certifi_ca_path": certifi.where(),
-        "mongo_connection_status": "unknown",
-        "mongo_error": None,
-        "sample_log": None
-    }
-    try:
-        if hasattr(logger, "mongo_handler") and logger.mongo_handler:
-            mongo_handler = logger.mongo_handler
-            mongo_handler.client.admin.command("ping")
-            info["mongo_connection_status"] = "connected"
-            db = mongo_handler.client.get_database("terminalguard")  # update DB name if different
-            logs = list(db.logs.find().limit(1))
-            info["sample_log"] = logs[0] if logs else "No logs yet"
-        else:
-            info["mongo_connection_status"] = "not_configured"
-    except Exception as e:
-        info["mongo_connection_status"] = "failed"
-        info["mongo_error"] = str(e)
-    return JSONResponse(content=info)
-
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8001))
-    uvicorn.run(
-        "dashboard_api:app",
-        host="0.0.0.0",
-        port=port,
-        reload=False
-    )
+    uvicorn.run("dashboard_api:app", host="0.0.0.0", port=port, reload=False)

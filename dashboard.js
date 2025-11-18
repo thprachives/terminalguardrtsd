@@ -97,8 +97,7 @@ let blockChart = null;
 let falsePositiveChart = null;
 let falseNegativeChart = null;
 let accuracyChart = null;
-
-let logs = []; // Cached logs including user markings
+let logs = [];
 
 async function fetchStats() {
     try {
@@ -123,26 +122,18 @@ function renderBlockChart(blocked, allowed) {
         type: 'pie',
         data: {
             labels: ['Blocked', 'Allowed'],
-            datasets: [{
-                data: [blocked, allowed],
-                backgroundColor: ['#f44336', '#4caf50']
-            }]
+            datasets: [{ data: [blocked, allowed], backgroundColor: ['#f44336', '#4caf50'] }]
         },
-        options: {
-            responsive: false,
-            plugins: {
-                legend: { position: 'bottom' }
-            }
-        }
+        options: { responsive: false, plugins: { legend: { position: 'bottom' } } }
     });
 }
 
 async function fetchLogs() {
     try {
-        const res = await fetch(`${API_BASE}/logs?count=10`);
+        const res = await fetch(`${API_BASE}/logs?count=15`);
         if (!res.ok) throw new Error("Failed to fetch logs");
         const data = await res.json();
-        logs = data.logs; // cache logs for calculations
+        logs = data.logs;
         renderLogsTable(logs);
         calculateAndRenderMetrics();
     } catch (error) {
@@ -153,88 +144,83 @@ async function fetchLogs() {
 function renderLogsTable(logs) {
     const tbody = document.getElementById("logTableBody");
     tbody.innerHTML = "";
-    if (logs.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='5'>No logs found</td></tr>";
-        return;
-    }
     logs.forEach(log => {
         const tr = document.createElement("tr");
 
-        const logIdTd = document.createElement("td");
-        logIdTd.textContent = log._id || log.id;
-        tr.appendChild(logIdTd);
+        // Timestamp
+        const tdTime = document.createElement("td");
+        tdTime.textContent = new Date(log.timestamp).toLocaleString();
+        tr.appendChild(tdTime);
 
-        const secretFoundTd = document.createElement("td");
-        secretFoundTd.textContent = log.secret_found ? "Yes" : "No";
-        tr.appendChild(secretFoundTd);
+        // Command (short)
+        const tdCmd = document.createElement("td");
+        tdCmd.textContent = (log.command || "").slice(0, 60);
+        tr.appendChild(tdCmd);
 
-        const commandTd = document.createElement("td");
-        commandTd.textContent = log.command;
-        tr.appendChild(commandTd);
+        // Action
+        const tdAction = document.createElement("td");
+        tdAction.textContent = log.action;
+        tdAction.className = log.action === "BLOCKED" ? "status-blocked" : "status-allowed";
+        tr.appendChild(tdAction);
 
-        const timestampTd = document.createElement("td");
-        timestampTd.textContent = new Date(log.timestamp).toLocaleString();
-        tr.appendChild(timestampTd);
+        // Secrets Found (Yes/No)
+        const tdSecret = document.createElement("td");
+        tdSecret.textContent = log.secrets_found > 0 ? "Yes" : "No";
+        tdSecret.className = log.secrets_found > 0 ? "secret-yes" : "secret-no";
+        tr.appendChild(tdSecret);
 
-        const actionTd = document.createElement("td");
-
+        // Mark Detection Buttons
+        const tdMark = document.createElement("td");
         const tickBtn = document.createElement("button");
         tickBtn.textContent = "✔️";
-        tickBtn.title = "Mark as Correct Detection";
-        tickBtn.onclick = () => handleMarking(log._id || log.id, true);
+        tickBtn.title = "Mark as correctly detected";
+        tickBtn.onclick = () => handleMarkDetection(log._id || log.id, "true");
+        if (log.mark_detection === "true") tickBtn.style.backgroundColor = "#4caf50";
 
         const crossBtn = document.createElement("button");
         crossBtn.textContent = "❌";
-        crossBtn.title = "Mark as Incorrect Detection";
-        crossBtn.onclick = () => handleMarking(log._id || log.id, false);
+        crossBtn.title = "Mark as incorrectly detected";
+        crossBtn.onclick = () => handleMarkDetection(log._id || log.id, "false");
+        if (log.mark_detection === "false") crossBtn.style.backgroundColor = "#f44336";
 
-        // Highlight buttons if marking exists in the DB
-        if (log.user_choice === "true") tickBtn.style.backgroundColor = '#4caf50';
-        if (log.user_choice === "false") crossBtn.style.backgroundColor = '#f44336';
-
-        actionTd.appendChild(tickBtn);
-        actionTd.appendChild(crossBtn);
-        tr.appendChild(actionTd);
+        tdMark.appendChild(tickBtn);
+        tdMark.appendChild(crossBtn);
+        tr.appendChild(tdMark);
 
         tbody.appendChild(tr);
     });
 }
 
-// Save marking to backend and refresh logs
-async function handleMarking(logId, isTrue) {
+async function handleMarkDetection(logId, mark) {
     try {
-        await fetch(`${API_BASE}/logs/mark`, {
+        await fetch(`${API_BASE}/logs/mark_detection`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ log_id: logId, user_choice: isTrue ? "true" : "false" })
+            body: JSON.stringify({ log_id: logId, mark }),
         });
-        await fetchLogs(); // refresh table and metrics
+        await fetchLogs(); // Refresh logs & charts on update
     } catch (error) {
-        console.error("Failed to save marking", error);
+        console.error("Failed to update mark detection:", error);
     }
 }
 
-// Calculate and visualize metrics using user_choice from logs
 function calculateAndRenderMetrics() {
     let TP = 0, TN = 0, FP = 0, FN = 0;
     logs.forEach(log => {
-        if (log.user_choice === "true" || log.user_choice === "false") {
-            const markedTrue = (log.user_choice === "true");
-            const secretFound = !!log.secret_found;
+        if (log.mark_detection === "true" || log.mark_detection === "false") {
+            const markedTrue = log.mark_detection === "true";
+            const secretFound = log.secrets_found > 0;
+
             if (secretFound) {
-                if (markedTrue) TP++;
-                else FP++;
+                markedTrue ? TP++ : FP++;
             } else {
-                if (markedTrue) FN++;
-                else TN++;
+                markedTrue ? FN++ : TN++;
             }
         }
     });
 
     const total = TP + TN + FP + FN;
     const accuracy = total ? (TP + TN) / total : 0;
-    const falsePositiveRate = (FP + TP) ? FP / (FP + TP) : 0;
-    const falseNegativeRate = (FN + TN) ? FN / (FN + TN) : 0;
 
     renderFalsePositiveChart(FP, TP);
     renderFalseNegativeChart(FN, TN);
@@ -248,15 +234,9 @@ function renderFalsePositiveChart(FP, TP) {
         type: 'pie',
         data: {
             labels: ['False Positives', 'True Positives'],
-            datasets: [{
-                data: [FP, TP],
-                backgroundColor: ['#f44336', '#4caf50']
-            }]
+            datasets: [{ data: [FP, TP], backgroundColor: ['#f44336', '#4caf50'] }]
         },
-        options: {
-            responsive: false,
-            plugins: { legend: { position: 'bottom' } }
-        }
+        options: { responsive: false, plugins: { legend: { position: 'bottom' } } }
     });
 }
 
@@ -267,15 +247,9 @@ function renderFalseNegativeChart(FN, TN) {
         type: 'pie',
         data: {
             labels: ['False Negatives', 'True Negatives'],
-            datasets: [{
-                data: [FN, TN],
-                backgroundColor: ['#f44336', '#4caf50']
-            }]
+            datasets: [{ data: [FN, TN], backgroundColor: ['#f44336', '#4caf50'] }]
         },
-        options: {
-            responsive: false,
-            plugins: { legend: { position: 'bottom' } }
-        }
+        options: { responsive: false, plugins: { legend: { position: 'bottom' } } }
     });
 }
 
@@ -286,22 +260,13 @@ function renderAccuracyChart(correctCount, incorrectCount) {
         type: 'pie',
         data: {
             labels: ['Correct', 'Incorrect'],
-            datasets: [{
-                data: [correctCount, incorrectCount],
-                backgroundColor: ['#4caf50', '#f44336']
-            }]
+            datasets: [{ data: [correctCount, incorrectCount], backgroundColor: ['#4caf50', '#f44336'] }]
         },
-        options: {
-            responsive: false,
-            plugins: { legend: { position: 'bottom' } }
-        }
+        options: { responsive: false, plugins: { legend: { position: 'bottom' } } }
     });
 }
 
-// Initialize dashboard
-async function initDashboard() {
+window.onload = async () => {
     await fetchStats();
     await fetchLogs();
-}
-
-window.onload = initDashboard;
+};
