@@ -1,111 +1,46 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>TerminalGuard Dashboard</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-  <div class="dashboard-header">
-    <h1>TerminalGuard Interactive Dashboard</h1>
-    
-    <div class="button-group">
-      <button onclick="reloadConfig()">Reload Regex</button>
-      <button onclick="refreshDashboard()">Refresh</button>
-    </div>
-
-    <span id="reloadMsg"></span>
-  </div>
-
-  <section id="stats-section">
-    <h2>Statistics</h2>
-    <div class="stats-flex">
-      <ul class="stats-numbers">
-        <li>Total Commands: <span id="totalCommands">Loading...</span></li>
-        <li>Blocked Commands: <span id="blockedCommands">Loading...</span></li>
-        <li>Allowed Commands: <span id="allowedCommands">Loading...</span></li>
-        <li>Total Secrets Detected: <span id="totalSecrets">Loading...</span></li>
-        <li>Block Rate (%): <span id="blockRate">Loading...</span></li>
-      </ul>
-      <div class="stats-chart">
-        <canvas id="blockChart" width="300" height="300"></canvas>
-      </div>
-    </div>
-  </section>
-
-  <section id="logs">
-    <h2>Recent Audit Logs</h2>
-    <table>
-      <thead>
-        <tr><th>Timestamp</th><th>Command</th><th>Action</th><th>Secrets Found</th></tr>
-      </thead>
-      <tbody id="logTableBody">
-        <tr><td colspan="4">Loading logs...</td></tr>
-      </tbody>
-    </table>
-  </section>
-
-  <script src="dashboard.js"></script>
-</body>
-</html> -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>TerminalGuard Dashboard</title>
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <header>
-        <h1>TerminalGuard Secret Detection Dashboard</h1>
-    </header>
+    <h1>TerminalGuard Dashboard</h1>
 
-    <section id="stats-section">
-        <div>
-            <span>Total Commands: <span id="totalCommands"></span></span>
-            <span>Blocked Commands: <span id="blockedCommands"></span></span>
-            <span>Allowed Commands: <span id="allowedCommands"></span></span>
-            <span>Total Secrets Detected: <span id="totalSecrets"></span></span>
-            <span>Block Rate: <span id="blockRate"></span></span>
+    <button id="refreshButton" title="Refresh Dashboard">Refresh</button>
+
+    <section id="stats-section" class="stats-container">
+        <div class="stats-details">
+            <div>Total Commands: <span id="totalCommands"></span></div>
+            <div>Blocked Commands: <span id="blockedCommands"></span></div>
+            <div>Allowed Commands: <span id="allowedCommands"></span></div>
+            <div>Total Secrets Detected: <span id="totalSecrets"></span></div>
+            <div>Block Rate: <span id="blockRate"></span>%</div>
+            <div>False Positive Rate: <span id="falsePositiveRate"></span>%</div>
+            <div>False Negative Rate: <span id="falseNegativeRate"></span>%</div>
+            <div>Accuracy: <span id="accuracyPercent"></span>%</div>
         </div>
-        <canvas id="blockChart" width="300" height="300"></canvas>
+        <canvas id="blockChart" width="250" height="250"></canvas>
     </section>
 
-    <section id="accuracy-charts-section">
-        <h2>Detection Performance</h2>
-        <div class="chart-container">
-            <h3>False Positive Rate</h3>
-            <canvas id="falsePositiveChart" width="300" height="300"></canvas>
-        </div>
-        <div class="chart-container">
-            <h3>False Negative Rate</h3>
-            <canvas id="falseNegativeChart" width="300" height="300"></canvas>
-        </div>
-        <div class="chart-container">
-            <h3>Accuracy</h3>
-            <canvas id="accuracyChart" width="300" height="300"></canvas>
-        </div>
-    </section>
+    <table>
+        <thead>
+            <tr>
+                <th>Command</th>
+                <th>Action</th>
+                <th>Secret Found</th>
+                <th>Mark Detection</th>
+            </tr>
+        </thead>
+        <tbody id="logTableBody"></tbody>
+    </table>
 
-    <section id="logs-section">
-        <h2>Logs</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Log ID</th>
-                    <th>Secret Found</th>
-                    <th>Command</th>
-                    <th>Timestamp</th>
-                    <th>Mark Detection</th> <!-- New column -->
-                </tr>
-            </thead>
-            <tbody id="logTableBody">
-                <!-- Logs will be dynamically inserted here -->
-            </tbody>
-        </table>
-    </section>
+    <div id="charts-area">
+        <canvas id="falsePositiveChart" width="250" height="250"></canvas>
+        <canvas id="falseNegativeChart" width="250" height="250"></canvas>
+        <canvas id="accuracyChart" width="250" height="250"></canvas>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="dashboard.js"></script>
