@@ -745,11 +745,7 @@ detection:
       regex: "ghr_[0-9a-zA-Z]{36}"
       description: "GitHub Refresh Token"
       severity: "high"
-    
-    github_app_token:
-      regex: "ghu_[0-9a-zA-Z]{36}"
-      description: "GitHub App Installation Token"
-      severity: "high"
+
     
     gitlab_pat:
       regex: "glpat-[0-9a-zA-Z_-]{20,}"
