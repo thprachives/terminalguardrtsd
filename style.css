@@ -213,6 +213,11 @@ tbody tr {
 .secret-no {
     color: #bbb;
 }
+table td:nth-child(2),
+table td:nth-child(3),
+table td:nth-child(4) {
+    text-align: center;
+}
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
