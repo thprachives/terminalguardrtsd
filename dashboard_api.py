@@ -74,7 +74,27 @@ def get_statistics():
     blocked = sum(1 for log in logs if log.get("action") == "BLOCKED")
     allowed = total - blocked
     secrets_count = sum(log.get("secrets_found", 0) for log in logs)
-    
+
+    # Calculate TP, FP, TN, FN for manual marking (mark_detection)
+    TP = FP = TN = FN = 0
+    for log in logs:
+        mark = log.get("mark_detection")
+        secret_found = log.get("secrets_found", 0) > 0
+        if mark == "true":
+            if secret_found:
+                TP += 1
+            else:
+                FN += 1
+        elif mark == "false":
+            if secret_found:
+                FP += 1
+            else:
+                TN += 1
+
+    fp_rate = FP / (FP + TP) if (FP + TP) > 0 else 0.0
+    fn_rate = FN / (FN + TN) if (FN + TN) > 0 else 0.0
+    accuracy = (TP + TN) / (TP + TN + FP + FN) if (TP + TN + FP + FN) > 0 else 0.0
+
     secret_types = {}
     for log in logs:
         for stype in log.get("secret_types", []):
@@ -89,6 +109,9 @@ def get_statistics():
         "total_secrets_detected": secrets_count,
         "secret_types_breakdown": secret_types,
         "block_rate_percent": round(block_rate, 2),
+        "false_positive_rate": round(fp_rate * 100, 2),
+        "false_negative_rate": round(fn_rate * 100, 2),
+        "accuracy_percent": round(accuracy * 100, 2)
     }
 
 if __name__ == "__main__":
