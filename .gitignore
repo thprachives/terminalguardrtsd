@@ -3,3 +3,4 @@ venv/
 __pycache__/
 *.pyc
 audit.log
+benchmark_results.json
