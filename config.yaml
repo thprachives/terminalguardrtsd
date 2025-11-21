@@ -1066,6 +1066,83 @@ detection:
       description: "Master Password"
       severity: "critical"
     
+    short_password:
+      regex: "(?i)password[\\s]*[=:]+[\\s]*[\"']?([^\"'\\s]{4,7})[\"']?"
+      description: "Short Password (4-7 chars) - Weak Security"
+      severity: "critical"
+
+    short_admin_password:
+      regex: "(?i)admin[_-]?password[\\s]*[=:]+[\\s]*[\"']?([^\"'\\s]{4,7})[\"']?"
+      description: "Short Admin Password (4-7 chars)"
+      severity: "critical"
+
+    short_root_password:
+      regex: "(?i)root[_-]?password[\\s]*[=:]+[\\s]*[\"']?([^\"'\\s]{4,7})[\"']?"
+      description: "Short Root Password (4-7 chars)"
+      severity: "critical"
+    
+    passphrase:
+      regex: "(?i)(passphrase|pass[_-]?phrase)[\\s]*[=:]+[\\s]*[\"']?([^\"'\\s]{8,})[\"']?"
+      description: "Passphrase Assignment"
+      severity: "high"
+
+    passwd:
+      regex: "(?i)\\bpasswd\\b[\\s]*[=:]+[\\s]*[\"']?([^\"'\\s]{6,})[\"']?"
+      description: "Password (passwd keyword)"
+      severity: "high"
+
+    pwd:
+      regex: "(?i)\\bpwd\\b[\\s]*[=:]+[\\s]*[\"']?([^\"'\\s]{6,})[\"']?"
+      description: "Password (pwd keyword)"
+      severity: "high"
+
+    pass_keyword:
+      regex: "(?i)\\bpass\\b[\\s]*[=:]+[\\s]*[\"']?([^\"'\\s]{8,})[\"']?"
+      description: "Password (pass keyword)"
+      severity: "high"
+
+    access_code:
+      regex: "(?i)(access[_-]?code|access[_-]?password)[\\s]*[=:]+[\\s]*[\"']?([^\"'\\s]{6,})[\"']?"
+      description: "Access Code"
+      severity: "high"
+
+    pin_code:
+      regex: "(?i)(pin|pin[_-]?code|pin[_-]?number)[\\s]*[=:]+[\\s]*[\"']?([0-9]{4,8})[\"']?"
+      description: "PIN Code"
+      severity: "high"
+
+    auth_credentials:
+      regex: "(?i)(auth|credentials|login)[\\s]*[=:]+[\\s]*[\"']?([^\"'\\s]{8,})[\"']?"
+      description: "Authentication Credentials"
+      severity: "high"
+
+    secret_value:
+      regex: "(?i)\\bsecret\\b[\\s]*[=:]+[\\s]*[\"']?([^\"'\\s]{8,})[\"']?"
+      description: "Secret Value"
+      severity: "high"
+    
+    # === NATURAL LANGUAGE PASSWORDS (HIGH) ===
+
+    password_is_pattern:
+      regex: "(?i)(password|pwd|pass)\\s+(is|was|will be|equals)\\s+[\"']?([a-zA-Z0-9!@#$%^&*]{6,})[\"']?"
+      description: "Password Mentioned as 'password is X'"
+      severity: "high"
+
+    password_use_pattern:
+      regex: "(?i)(use|enter|type|set)\\s+(password|pwd|pass)\\s*[:]?\\s*[\"']?([a-zA-Z0-9!@#$%^&*]{6,})[\"']?"
+      description: "Password in Instructions (use password X)"
+      severity: "high"
+
+    password_changed_pattern:
+      regex: "(?i)(password|pwd)\\s+(changed|reset|set)\\s+to\\s+[\"']?([a-zA-Z0-9!@#$%^&*]{6,})[\"']?"
+      description: "Password Change Notification"
+      severity: "high"
+
+    password_for_pattern:
+      regex: "(?i)(password|pwd)\\s+for\\s+\\w+\\s+is\\s+[\"']?([a-zA-Z0-9!@#$%^&*]{6,})[\"']?"
+      description: "Password Described as 'password for X is Y'"
+      severity: "high"
+      
     # === ENCRYPTION & SECURITY KEYS (8 patterns) ===
     
     aes_key:
