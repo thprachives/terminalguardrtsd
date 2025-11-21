@@ -1433,6 +1433,7 @@ whitelist:
     - '^history'
     - 'API_KEY=devkey_*'
     - 'API_KEY=TEST*'
+    - 'API_KEY=your_api_key_here'
     - 'password=examplepassword'
     - 'ENV_SECRET=dummysecretvalue'
 
