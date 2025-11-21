@@ -260,3 +260,37 @@ table td:nth-child(4) {
         padding: 6px 12px;
     }
 }
+
+/* PAGINATION */
+.pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+.pagination-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.pagination-buttons button {
+    background-color: #2d3138;
+    color: #e1e3e6;
+    border: 1px solid #3d4148;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.pagination-buttons button:hover:not(:disabled) {
+    background-color: #3d4148;
+}
+
+.pagination-buttons button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

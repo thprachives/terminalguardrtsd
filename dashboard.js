@@ -7,6 +7,9 @@ let accuracyChart = null;
 let severityChart = null;
 let hourlyChart = null;
 let logs = [];
+let allLogs = [];
+let currentPage = 1;
+const logsPerPage = 15;
 
 async function fetchStats() {
     try {
@@ -29,14 +32,55 @@ async function fetchStats() {
 
 async function fetchLogs() {
     try {
-        const res = await fetch(`${API_BASE}/logs?count=15`);
+        const res = await fetch(`${API_BASE}/logs?count=100`);
         if (!res.ok) throw new Error("Failed to fetch logs");
         const data = await res.json();
-        logs = data.logs;
-        renderLogsTable(logs);
+        allLogs = data.logs;
+        currentPage = 1;
+        renderCurrentPage();
         calculateAndRenderMetrics();
     } catch (error) {
         console.error(error);
+    }
+}
+
+function renderCurrentPage() {
+    const totalLogs = allLogs.length;
+    const startIndex = (currentPage - 1) * logsPerPage;
+    const endIndex = Math.min(startIndex + logsPerPage, totalLogs);
+
+    logs = allLogs.slice(startIndex, endIndex);
+    renderLogsTable(logs);
+    updatePaginationInfo(startIndex + 1, endIndex, totalLogs);
+    updatePaginationButtons();
+}
+
+function updatePaginationInfo(start, end, total) {
+    const info = total > 0 ? `Logs ${start}-${end} of ${total}` : 'No logs';
+    document.getElementById('paginationInfoTop').textContent = info;
+}
+
+function updatePaginationButtons() {
+    const totalPages = Math.ceil(allLogs.length / logsPerPage);
+    const isFirstPage = currentPage === 1;
+    const isLastPage = currentPage >= totalPages;
+
+    document.getElementById('prevPageTop').disabled = isFirstPage;
+    document.getElementById('nextPageTop').disabled = isLastPage;
+}
+
+function nextPage() {
+    const totalPages = Math.ceil(allLogs.length / logsPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        renderCurrentPage();
+    }
+}
+
+function prevPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        renderCurrentPage();
     }
 }
 
@@ -114,7 +158,10 @@ async function handleMarkDetection(logId, mark) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ log_id: logId, mark }),
         });
+        const savedPage = currentPage;
         await fetchLogs();
+        currentPage = savedPage;
+        renderCurrentPage();
     } catch (error) {
         console.error("Failed to update mark detection:", error);
     }
@@ -122,7 +169,7 @@ async function handleMarkDetection(logId, mark) {
 
 function calculateAndRenderMetrics() {
     let TP = 0, TN = 0, FP = 0, FN = 0;
-    logs.forEach(log => {
+    allLogs.forEach(log => {
         if (log.mark_detection === "true" || log.mark_detection === "false") {
             const markedTrue = log.mark_detection === "true";
             const secretFound = log.secrets_found > 0;

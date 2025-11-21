@@ -77,6 +77,11 @@
             <h3>Accuracy</h3>
             <canvas id="accuracyChart" width="250" height="250"></canvas>
         </div>
+
+        <div class="chart-card">
+            <h3>Severity Breakdown</h3>
+            <canvas id="severityChart" width="250" height="250"></canvas>
+        </div>
     </div>
 
     <h2 class="performance-heading">System Performance</h2>
@@ -102,15 +107,6 @@
         </div>
     </section>
 
-    <h2 class="performance-heading">Severity Breakdown</h2>
-
-    <div id="severity-area">
-        <div class="chart-card">
-            <h3>By Severity</h3>
-            <canvas id="severityChart" width="300" height="250"></canvas>
-        </div>
-    </div>
-
     <h2 class="performance-heading">Detection Trends</h2>
 
     <div id="trends-area">
@@ -120,6 +116,13 @@
         </div>
     </div>
     <h2 class="log-heading">Command Log</h2>
+    <div class="pagination-controls">
+        <span id="paginationInfoTop">Logs 1-15 of 0</span>
+        <div class="pagination-buttons">
+            <button id="prevPageTop" onclick="prevPage()">&lt; Prev</button>
+            <button id="nextPageTop" onclick="nextPage()">Next &gt;</button>
+        </div>
+    </div>
     <table>
         <thead>
             <tr>
