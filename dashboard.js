@@ -4,6 +4,8 @@ let blockChart = null;
 let falsePositiveChart = null;
 let falseNegativeChart = null;
 let accuracyChart = null;
+let severityChart = null;
+let hourlyChart = null;
 let logs = [];
 
 async function fetchStats() {
@@ -176,12 +178,121 @@ function renderAccuracyChart(correct, incorrect) {
     });
 }
 
+// NEW: Fetch performance/latency metrics
+async function fetchPerformance() {
+    try {
+        const res = await fetch(`${API_BASE}/performance`);
+        if (!res.ok) throw new Error("Failed to fetch performance");
+        const data = await res.json();
+        document.getElementById("avgLatency").textContent = data.avg_latency_ms || "-";
+        document.getElementById("minLatency").textContent = data.min_latency_ms || "-";
+        document.getElementById("maxLatency").textContent = data.max_latency_ms || "-";
+        document.getElementById("p95Latency").textContent = data.p95_latency_ms || "-";
+    } catch (error) {
+        console.error("Performance fetch error:", error);
+    }
+}
+
+// NEW: Fetch severity breakdown
+async function fetchSeverity() {
+    try {
+        const res = await fetch(`${API_BASE}/severity`);
+        if (!res.ok) throw new Error("Failed to fetch severity");
+        const data = await res.json();
+        renderSeverityChart(data.by_severity || {});
+    } catch (error) {
+        console.error("Severity fetch error:", error);
+    }
+}
+
+function renderSeverityChart(severityData) {
+    const ctx = document.getElementById("severityChart").getContext("2d");
+    if (severityChart) severityChart.destroy();
+
+    const labels = Object.keys(severityData);
+    const values = Object.values(severityData);
+
+    if (labels.length === 0) {
+        labels.push("No data");
+        values.push(1);
+    }
+
+    const colors = {
+        'critical': '#d32f2f',
+        'high': '#f57c00',
+        'medium': '#fbc02d',
+        'low': '#4caf50',
+        'unknown': '#9e9e9e'
+    };
+
+    const backgroundColors = labels.map(l => colors[l.toLowerCase()] || '#9e9e9e');
+
+    severityChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels.map(l => l.toUpperCase()),
+            datasets: [{ data: values, backgroundColor: backgroundColors }]
+        },
+        options: { responsive: false, plugins: { legend: { position: 'bottom' } } }
+    });
+}
+
+// NEW: Fetch trends
+async function fetchTrends() {
+    try {
+        const res = await fetch(`${API_BASE}/trends`);
+        if (!res.ok) throw new Error("Failed to fetch trends");
+        const data = await res.json();
+        renderHourlyChart(data.by_hour || {});
+    } catch (error) {
+        console.error("Trends fetch error:", error);
+    }
+}
+
+function renderHourlyChart(hourlyData) {
+    const ctx = document.getElementById("hourlyChart").getContext("2d");
+    if (hourlyChart) hourlyChart.destroy();
+
+    // Fill all 24 hours
+    const labels = [];
+    const values = [];
+    for (let i = 0; i < 24; i++) {
+        labels.push(`${i}:00`);
+        values.push(hourlyData[i] || 0);
+    }
+
+    hourlyChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Detections',
+                data: values,
+                backgroundColor: '#2196f3'
+            }]
+        },
+        options: {
+            responsive: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+}
+
 document.getElementById("refreshButton").onclick = async () => {
     await fetchStats();
     await fetchLogs();
+    await fetchPerformance();
+    await fetchSeverity();
+    await fetchTrends();
 };
 
 window.onload = async () => {
     await fetchStats();
     await fetchLogs();
+    await fetchPerformance();
+    await fetchSeverity();
+    await fetchTrends();
 };

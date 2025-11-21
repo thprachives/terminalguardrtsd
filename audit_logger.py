@@ -38,7 +38,7 @@ class AuditLogger:
         else:
             print("[AUDIT_LOGGER] MongoDB logging disabled, using file fallback only", file=sys.stderr)
 
-    def log_event(self, command, secrets_detected, action, user_choice=None):
+    def log_event(self, command, secrets_detected, action, user_choice=None, latency_ms=None):
         """Log a command execution event"""
         timestamp = datetime.now().isoformat()
         log_entry = {
@@ -47,7 +47,10 @@ class AuditLogger:
             'action': action,
             'secrets_found': len(secrets_detected),
             'secret_types': [s['type'] for s in secrets_detected],
-            'user_choice': user_choice
+            'secret_severities': [s.get('severity', 'unknown') for s in secrets_detected],
+            'user_choice': user_choice,
+            'latency_ms': latency_ms,
+            'mark_detection': None  # For user feedback: 'true_positive', 'false_positive', etc.
         }
 
         logged = False

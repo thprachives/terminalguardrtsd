@@ -1,6 +1,7 @@
 import asyncio
 import json
 import sys
+import time
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.server import Server
@@ -192,6 +193,7 @@ class TerminalGuardMiddleware:
 
     async def intercept_and_forward(self, tool_name: str, arguments: dict) -> list[TextContent]:
         """Intercept tool call, scan for secrets, and forward to target server"""
+        start_time = time.perf_counter()
         print("[DEBUG] intercept_and_forward called for tool:", tool_name, file=sys.stderr)
 
         # Convert arguments to string for scanning
@@ -205,6 +207,9 @@ class TerminalGuardMiddleware:
 
         # Filter out false positives based on tool context
         secrets = self.filter_false_positives(tool_name, arguments, detected_secrets)
+
+        # Calculate detection latency
+        detection_latency_ms = (time.perf_counter() - start_time) * 1000
 
         if detected_secrets and not secrets:
             print(f"[MIDDLEWARE] ✅ All {len(detected_secrets)} detection(s) were false positives, filtered out", file=sys.stderr)
@@ -231,9 +236,10 @@ class TerminalGuardMiddleware:
                     command=f"MCP:{tool_name} - {args_str[:100]}",
                     secrets_detected=secrets,
                     action='BLOCKED',
-                    user_choice='automatic'
+                    user_choice='automatic',
+                    latency_ms=round(detection_latency_ms, 3)
                 )
-                print("[DEBUG] Blocked attempt logged successfully.", file=sys.stderr)
+                print(f"[DEBUG] Blocked attempt logged successfully. Latency: {detection_latency_ms:.3f}ms", file=sys.stderr)
             except Exception as e:
                 print(f"[ERROR] Failed to log blocked attempt: {e}", file=sys.stderr)
                 import traceback
@@ -246,15 +252,16 @@ class TerminalGuardMiddleware:
         
         try:
             result = await self.target_session.call_tool(tool_name, arguments)
-            
+
             # Log successful call
             self.logger.log_event(
                 command=f"MCP:{tool_name} - {args_str[:100]}",
                 secrets_detected=[],
                 action='ALLOWED',
-                user_choice=None
+                user_choice=None,
+                latency_ms=round(detection_latency_ms, 3)
             )
-            
+
             return result.content
         
         except Exception as e:
